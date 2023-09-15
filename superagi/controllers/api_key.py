@@ -33,8 +33,7 @@ def create_api_key(name: Annotated[str,Body(embed=True)], Authorize: AuthJWT = D
 
 @router.get("")
 def get_all(Authorize: AuthJWT = Depends(check_auth), organisation=Depends(get_user_organisation)):
-    api_keys=ApiKey.get_by_org_id(db.session, organisation.id)
-    return api_keys
+    return ApiKey.get_by_org_id(db.session, organisation.id)
 
 @router.delete("/{api_key_id}")
 def delete_api_key(api_key_id:int, Authorize: AuthJWT = Depends(check_auth)):

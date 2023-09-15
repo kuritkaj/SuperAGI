@@ -112,14 +112,16 @@ class TaskOutputHandler:
         for task in reversed(tasks):
             self.task_queue.add_task(task)
         if len(tasks) > 0:
-            logger.info("Adding task to queue: " + str(tasks))
+            logger.info(f"Adding task to queue: {str(tasks)}")
         agent_execution = AgentExecution.find_by_id(session, self.agent_execution_id)
         for task in tasks:
-            agent_execution_feed = AgentExecutionFeed(agent_execution_id=self.agent_execution_id,
-                                                      agent_id=self.agent_config["agent_id"],
-                                                      feed="New Task Added: " + task,
-                                                      role="system",
-                                                      feed_group_id=agent_execution.current_feed_group_id)
+            agent_execution_feed = AgentExecutionFeed(
+                agent_execution_id=self.agent_execution_id,
+                agent_id=self.agent_config["agent_id"],
+                feed=f"New Task Added: {task}",
+                role="system",
+                feed_group_id=agent_execution.current_feed_group_id,
+            )
             session.add(agent_execution_feed)
         status = "COMPLETE" if len(self.task_queue.get_tasks()) == 0 else "PENDING"
         session.commit()
@@ -143,7 +145,7 @@ class ReplaceTaskOutputHandler:
         for task in reversed(tasks):
             self.task_queue.add_task(task)
         if len(tasks) > 0:
-            logger.info("Tasks reprioritized in order: " + str(tasks))
+            logger.info(f"Tasks reprioritized in order: {str(tasks)}")
         status = "COMPLETE" if len(self.task_queue.get_tasks()) == 0 else "PENDING"
         session.commit()
         return TaskExecutorResponse(status=status, retry=False)
