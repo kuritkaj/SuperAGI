@@ -90,10 +90,14 @@ def get_organisation(organisation_id: int, Authorize: AuthJWT = Depends(check_au
 
     """
 
-    db_organisation = db.session.query(Organisation).filter(Organisation.id == organisation_id).first()
-    if not db_organisation:
+    if (
+        db_organisation := db.session.query(Organisation)
+        .filter(Organisation.id == organisation_id)
+        .first()
+    ):
+        return db_organisation
+    else:
         raise HTTPException(status_code=404, detail="organisation not found")
-    return db_organisation
 
 
 @router.put("/update/{organisation_id}", response_model=OrganisationOut)
@@ -189,8 +193,6 @@ def agent_workflows(organisation=Depends(get_user_organisation)):
     """
 
     agent_workflows = db.session.query(AgentWorkflow).all()
-    workflows = [workflow.name for workflow in agent_workflows]
-
-    return workflows
+    return [workflow.name for workflow in agent_workflows]
 
 

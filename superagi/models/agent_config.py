@@ -44,13 +44,14 @@ class AgentConfiguration(DBBaseModel):
 
         updated_details_dict = updated_details.dict()
 
-        # Fetch existing 'toolkits' agent configuration for the given agent_id
-        agent_toolkits_config = session.query(AgentConfiguration).filter(
-            AgentConfiguration.agent_id == agent_id,
-            AgentConfiguration.key == 'toolkits'
-        ).first()
-
-        if agent_toolkits_config:
+        if (
+            agent_toolkits_config := session.query(AgentConfiguration)
+            .filter(
+                AgentConfiguration.agent_id == agent_id,
+                AgentConfiguration.key == 'toolkits',
+            )
+            .first()
+        ):
             agent_toolkits_config.value = str(updated_details_dict['toolkits'])
         else:
             agent_toolkits_config = AgentConfiguration(
@@ -59,14 +60,15 @@ class AgentConfiguration(DBBaseModel):
                 value=str(updated_details_dict['toolkits'])
             )
             session.add(agent_toolkits_config)
-        
-        #Fetch existing knowledge for the given agent id and update it accordingly
-        knowledge_config = session.query(AgentConfiguration).filter(
-            AgentConfiguration.agent_id == agent_id,
-            AgentConfiguration.key == 'knowledge'
-        ).first()
 
-        if knowledge_config:
+        if (
+            knowledge_config := session.query(AgentConfiguration)
+            .filter(
+                AgentConfiguration.agent_id == agent_id,
+                AgentConfiguration.key == 'knowledge',
+            )
+            .first()
+        ):
             knowledge_config.value = str(updated_details_dict['knowledge'])
         else:
             knowledge_config = AgentConfiguration(
@@ -75,7 +77,7 @@ class AgentConfiguration(DBBaseModel):
                 value=str(updated_details_dict['knowledge'])
             )
             session.add(knowledge_config)
-            
+
         # Fetch agent configurations
         agent_configs = session.query(AgentConfiguration).filter(AgentConfiguration.agent_id == agent_id).all()
         for agent_config in agent_configs:
@@ -105,9 +107,7 @@ class AgentConfiguration(DBBaseModel):
         selected_model_source = ModelSourceType.get_model_source_from_model(model)
         if selected_model_source.value == config_model_source:
             config_value = Configuration.fetch_value_by_agent_id(session, agent_id, "model_api_key")
-            model_api_key = decrypt_data(config_value)
-            return model_api_key
-
+            return decrypt_data(config_value)
         if selected_model_source == ModelSourceType.GooglePalm:
             return get_config("PALM_API_KEY")
 

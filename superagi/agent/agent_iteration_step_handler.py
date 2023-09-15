@@ -66,7 +66,7 @@ class AgentIterationStepHandler:
                                           agent_tools=agent_tools)
 
         messages = AgentLlmMessageBuilder(self.session, self.llm, self.agent_id, self.agent_execution_id) \
-            .build_agent_messages(prompt, agent_feeds, history_enabled=iteration_workflow_step.history_enabled,
+                .build_agent_messages(prompt, agent_feeds, history_enabled=iteration_workflow_step.history_enabled,
                                   completion_prompt=iteration_workflow_step.completion_prompt)
 
         logger.debug("Prompt messages:", messages)
@@ -74,7 +74,7 @@ class AgentIterationStepHandler:
         response = self.llm.chat_completion(messages, TokenCounter.token_limit(self.llm.get_model()) - current_tokens)
 
         if 'content' not in response or response['content'] is None:
-            raise RuntimeError(f"Failed to get response from llm")
+            raise RuntimeError("Failed to get response from llm")
 
         total_tokens = current_tokens + TokenCounter.count_message_tokens(response['content'], self.llm.get_model())
         AgentExecution.update_tokens(self.session, self.agent_execution_id, total_tokens)
@@ -149,9 +149,7 @@ class AgentIterationStepHandler:
             agent_tools.append(QueryResourceTool())
         user_tools = self.session.query(Tool).filter(
             and_(Tool.id.in_(agent_config["tools"]), Tool.file_name is not None)).all()
-        for tool in user_tools:
-            agent_tools.append(tool_builder.build_tool(tool))
-
+        agent_tools.extend(tool_builder.build_tool(tool) for tool in user_tools)
         agent_tools = [tool_builder.set_default_params_tool(tool, agent_config, agent_execution_config,
                                                             model_api_key, resource_summary) for tool in agent_tools]
         return agent_tools
@@ -184,8 +182,7 @@ class AgentIterationStepHandler:
                                                                    agent_execution_permission.assistant_reply)
             result = tool_result.result
         else:
-            result = f"User denied the permission to run the tool {agent_execution_permission.tool_name}" \
-                     f"{' and has given the following feedback : ' + agent_execution_permission.user_feedback if agent_execution_permission.user_feedback else ''}"
+            result = f"User denied the permission to run the tool {agent_execution_permission.tool_name}{f' and has given the following feedback : {agent_execution_permission.user_feedback}' if agent_execution_permission.user_feedback else ''}"
 
         agent_execution_feed = AgentExecutionFeed(agent_execution_id=agent_execution_permission.agent_execution_id,
                                                   agent_id=agent_execution_permission.agent_id,

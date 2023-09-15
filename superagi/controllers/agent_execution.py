@@ -90,7 +90,7 @@ def create_agent_execution(agent_execution: AgentExecutionIn,
                                         num_of_tokens=0,
                                         current_agent_step_id=start_step.id,
                                         iteration_workflow_step_id=iteration_step_id)
-    
+
     agent_execution_configs = {
         "goal": agent_execution.goal,
         "instruction": agent_execution.instruction
@@ -100,20 +100,17 @@ def create_agent_execution(agent_execution: AgentExecutionIn,
     keys_to_exclude = ["goal", "instruction"]
     for agent_config in agent_configs:
         if agent_config.key not in keys_to_exclude:
-            if agent_config.key == "toolkits":
-                if agent_config.value:
-                    toolkits = [int(item) for item in agent_config.value.strip('{}').split(',') if item.strip() and item != '[]']
-                    agent_execution_configs[agent_config.key] = toolkits
-                else:
-                    agent_execution_configs[agent_config.key] = []
-            elif agent_config.key == "constraints":
-                if agent_config.value:
-                    agent_execution_configs[agent_config.key] = agent_config.value
-                else:
-                    agent_execution_configs[agent_config.key] = []
-            else:
+            if (
+                agent_config.key == "constraints"
+                and agent_config.value
+                or agent_config.key not in ["constraints", "toolkits"]
+            ):
                 agent_execution_configs[agent_config.key] = agent_config.value
-
+            elif agent_config.key == "constraints" or not agent_config.value:
+                agent_execution_configs[agent_config.key] = []
+            else:
+                toolkits = [int(item) for item in agent_config.value.strip('{}').split(',') if item.strip() and item != '[]']
+                agent_execution_configs[agent_config.key] = toolkits
     db.session.add(db_agent_execution)
     db.session.commit()
     db.session.flush()
@@ -326,8 +323,7 @@ def agent_list_by_status(status: str,
 
     running_agent_ids = db.session.query(AgentExecution.agent_id).filter(
         AgentExecution.status == status.upper()).distinct().all()
-    agent_ids = [agent_id for (agent_id) in running_agent_ids]
-    return agent_ids
+    return list(running_agent_ids)
 
 
 @router.get("/get/agent/{agent_id}")
@@ -354,9 +350,7 @@ def get_agent_by_latest_execution(project_id: int,
         .order_by(desc(AgentExecution.last_execution_time))
         .first()
     )
-    isRunning = False
-    if latest_execution.status == "RUNNING":
-        isRunning = True
+    isRunning = latest_execution.status == "RUNNING"
     agent = db.session.query(Agent).filter(Agent.id == latest_execution.agent_id).first()
     return {
         "agent_id": latest_execution.agent_id,
